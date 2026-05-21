@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VAEP 축구 분석 시스템</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a0a;
+    color: #fff;
+    font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── 공통 버튼 ── */
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #22c55e; color: #000;
+    border: none; padding: 13px 30px;
+    border-radius: 8px; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-primary:hover { background: #16a34a; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: transparent; color: #aaa;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 11px 24px; border-radius: 8px;
+    font-size: 14px; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: #22c55e; color: #22c55e; }
+
+  /* ══════════════════════════════
+     업로드 화면
+  ══════════════════════════════ */
+  #upload-screen {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 100vh; padding: 2rem;
+    background: radial-gradient(ellipse at center, #0d2011 0%, #050a05 100%);
+  }
+
+  .logo { font-size: 12px; letter-spacing: 4px; color: #555; margin-bottom: 1.5rem; }
+
+  .main-title {
+    font-size: clamp(26px, 4vw, 48px); font-weight: 700;
+    text-align: center; line-height: 1.2; margin-bottom: 0.5rem;
+  }
+  .main-title span { color: #22c55e; }
+
+  .subtitle {
+    font-size: 14px; color: #555; text-align: center;
+    margin-bottom: 2.5rem; max-width: 560px; line-height: 1.7;
+  }
+
+  /* 업로드 존 */
+  .upload-zone {
+    width: 100%; max-width: 560px;
+    border: 1.5px dashed rgba(255,255,255,0.18);
+    border-radius: 14px; padding: 2.5rem 2rem;
+    text-align: center; cursor: pointer;
+    transition: all 0.2s; background: rgba(255,255,255,0.03);
+    margin-bottom: 1.5rem;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: #22c55e; background: rgba(34,197,94,0.05);
+  }
+  .upload-zone .icon { font-size: 42px; margin-bottom: 0.8rem; }
+  .upload-zone h3 { font-size: 16px; margin-bottom: 0.4rem; font-weight: 500; }
+  .upload-zone p  { font-size: 12px; color: #555; }
+  #file-input { display: none; }
+
+  /* 선수 정보 옵션 */
+  .options-box {
+    width: 100%; max-width: 560px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 1.2rem 1.4rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .option-title {
+    font-size: 12px; color: #666; letter-spacing: 1px;
+    margin-bottom: 1rem;
+  }
+
+  .radio-group { display: flex; gap: 12px; margin-bottom: 1rem; }
+
+  .radio-btn {
+    flex: 1; padding: 10px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px; cursor: pointer;
+    text-align: center; font-size: 13px; color: #888;
+    transition: all 0.2s;
+  }
+  .radio-btn.selected {
+    border-color: #22c55e; color: #22c55e;
+    background: rgba(34,197,94,0.08);
+  }
+
+  /* 팀 색상 + 선수 이름 입력 */
+  #player-input-section { display: none; }
+
+  .team-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .color-dot {
+    width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+  }
+  .team-label { font-size: 13px; color: #888; width: 50px; flex-shrink: 0; }
+
+  .color-select {
+    background: #1a1a1a; border: 1px solid rgba(255,255,255,0.15);
+    color: #fff; padding: 5px 8px; border-radius: 6px;
+    font-size: 12px; cursor: pointer;
+  }
+
+  .names-input {
+    flex: 1; background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px; padding: 6px 10px;
+    color: #fff; font-size: 12px;
+    placeholder-color: #444;
+  }
+  .names-input::placeholder { color: #444; }
+  .names-input:focus { outline: none; border-color: #22c55e; }
+
+  .input-hint { font-size: 11px; color: #444; margin-top: 4px; }
+
+  /* ══════════════════════════════
+     처리 화면
+  ══════════════════════════════ */
+  #processing-screen {
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 100vh; padding: 2rem;
+  }
+
+  .processing-label {
+    font-size: 11px; letter-spacing: 3px; color: #444; margin-bottom: 1.5rem;
+  }
+
+  .progress-num {
+    font-size: 52px; font-weight: 800; color: #22c55e;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .progress-step {
+    font-size: 14px; color: #666; margin-top: 6px; margin-bottom: 2rem;
+  }
+
+  .pipeline-steps {
+    display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .p-step { display: flex; flex-direction: column; align-items: center; gap: 6px; opacity: 0.25; transition: opacity 0.3s; }
+  .p-step.active { opacity: 1; }
+  .p-step.done   { opacity: 0.55; }
+
+  .p-step-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .p-step.active .p-step-icon { border-color: #22c55e; }
+  .p-step.done   .p-step-icon { border-color: #16a34a; background: rgba(22,163,74,0.15); }
+  .p-step-label  { font-size: 11px; color: #666; text-align: center; }
+
+  /* 완료 섹션 */
+  #done-section {
+    display: none; flex-direction: column;
+    align-items: center; gap: 12px;
+  }
+
+  .done-msg { font-size: 15px; color: #22c55e; font-weight: 600; }
+
+  /* ══════════════════════════════
+     공통 화면 전환
+  ══════════════════════════════ */
+  .screen { display: none; }
+  .screen.active { display: flex; }
+</style>
+</head>
+<body>
+
+<!-- ───────────── 업로드 화면 ───────────── -->
+<div id="upload-screen" class="screen active" style="flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:2rem; background:radial-gradient(ellipse at center,#0d2011,#050a05);">
+
+  <p class="logo">⚽ VAEP FOOTBALL ANALYTICS</p>
+
+  <h1 class="main-title">AI 기반 <span>VAEP</span> 축구 분석</h1>
+  <p class="subtitle">
+    패스·드리블·슛 등 온볼 Action과 오프더볼 런·압박·공간 창출까지<br>
+    모든 선수의 기여도를 영상 위에 직접 시각화합니다
+  </p>
+
+  <!-- 업로드 존 -->
+  <div class="upload-zone" id="upload-zone">
+    <div class="icon">🎬</div>
+    <h3 id="upload-title">축구 경기 영상을 업로드하세요</h3>
+    <p id="upload-sub">MP4, AVI, MOV, MKV 지원 (최대 500MB)</p>
+    <input type="file" id="file-input" accept="video/mp4,video/avi,video/mov,video/mkv,video/webm">
+  </div>
+
+  <!-- 선수 정보 옵션 -->
+  <div class="options-box">
+    <p class="option-title">선수 정보 설정</p>
+
+    <div class="radio-group">
+      <div class="radio-btn selected" id="mode-auto" onclick="setMode('auto')">
+        🎽 자동 (팀 색으로만 구분)
+      </div>
+      <div class="radio-btn" id="mode-manual" onclick="setMode('manual')">
+        ✏️ 선수 이름 직접 입력
+      </div>
+    </div>
+
+    <!-- 이름 직접 입력 섹션 -->
+    <div id="player-input-section">
+      <div class="team-row">
+        <div class="color-dot" id="dot-a" style="background:#dc2626;"></div>
+        <span class="team-label">팀 A</span>
+        <select class="color-select" id="color-a" onchange="updateDot('a')">
+          <option value="#dc2626">🔴 빨강</option>
+          <option value="#f97316">🟠 주황</option>
+          <option value="#facc15">🟡 노랑</option>
+          <option value="#22c55e">🟢 초록</option>
+          <option value="#3b82f6">🔵 파랑</option>
+          <option value="#ffffff">⚪ 흰색</option>
+        </select>
+        <input class="names-input" id="names-a" placeholder="홍길동, 이순신, 강감찬 ...">
+      </div>
+      <div class="team-row">
+        <div class="color-dot" id="dot-b" style="background:#3b82f6;"></div>
+        <span class="team-label">팀 B</span>
+        <select class="color-select" id="color-b" onchange="updateDot('b')">
+          <option value="#dc2626">🔴 빨강</option>
+          <option value="#f97316">🟠 주황</option>
+          <option value="#facc15">🟡 노랑</option>
+          <option value="#22c55e">🟢 초록</option>
+          <option value="#3b82f6" selected>🔵 파랑</option>
+          <option value="#ffffff">⚪ 흰색</option>
+        </select>
+        <input class="names-input" id="names-b" placeholder="김철수, 박영희, 최민준 ...">
+      </div>
+      <p class="input-hint">※ 쉼표로 구분, 1번 선수부터 순서대로 입력 (비워두면 번호로 표시)</p>
+    </div>
+  </div>
+
+  <button class="btn-primary" id="analyze-btn" disabled>▶ VAEP 분석 시작</button>
+</div>
+
+<!-- ───────────── 처리 화면 ───────────── -->
+<div id="processing-screen" class="screen" style="flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:2rem;">
+
+  <p class="processing-label">ANALYZING</p>
+  <div class="progress-num" id="progress-pct">0%</div>
+  <p class="progress-step" id="progress-step">준비 중...</p>
+
+  <div class="pipeline-steps">
+    <div class="p-step active" data-idx="0">
+      <div class="p-step-icon">👁</div>
+      <div class="p-step-label">선수 탐지<br>YOLO v8</div>
+    </div>
+    <div class="p-step" data-idx="1">
+      <div class="p-step-icon">📍</div>
+      <div class="p-step-label">위치 추적<br>Kalman</div>
+    </div>
+    <div class="p-step" data-idx="2">
+      <div class="p-step-icon">🎽</div>
+      <div class="p-step-label">팀 분류<br>색상</div>
+    </div>
+    <div class="p-step" data-idx="3">
+      <div class="p-step-icon">📊</div>
+      <div class="p-step-label">온볼 VAEP<br>xG 모델</div>
+    </div>
+    <div class="p-step" data-idx="4">
+      <div class="p-step-icon">🏃</div>
+      <div class="p-step-label">오프더볼<br>VAEP</div>
+    </div>
+    <div class="p-step" data-idx="5">
+      <div class="p-step-icon">🎬</div>
+      <div class="p-step-label">영상 오버레이<br>렌더링</div>
+    </div>
+    <div class="p-step" data-idx="6">
+      <div class="p-step-icon">💾</div>
+      <div class="p-step-label">MP4<br>저장</div>
+    </div>
+  </div>
+
+  <!-- 완료 -->
+  <div id="done-section">
+    <p class="done-msg">✅ VAEP 오버레이 영상 완성!</p>
+    <button class="btn-primary" id="download-btn" style="font-size:16px; padding:14px 36px;">
+      ⬇ VAEP 영상 다운로드 (.mp4)
+    </button>
+    <button class="btn-secondary" id="restart-btn">↩ 다른 영상 분석하기</button>
+  </div>
+</div>
+
+<script>
+const API_BASE = '';  // 같은 서버에서 서빙되므로 상대경로 사용
+let currentMode = 'auto';
+let jobId = null;
+
+// ── 모드 전환 ──
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('mode-auto').classList.toggle('selected', mode === 'auto');
+  document.getElementById('mode-manual').classList.toggle('selected', mode === 'manual');
+  document.getElementById('player-input-section').style.display =
+    mode === 'manual' ? 'block' : 'none';
+}
+
+function updateDot(team) {
+  const color = document.getElementById(`color-${team}`).value;
+  document.getElementById(`dot-${team}`).style.background = color;
+}
+
+// ── 업로드 존 ──
+const uploadZone = document.getElementById('upload-zone');
+const fileInput  = document.getElementById('file-input');
+const analyzeBtn = document.getElementById('analyze-btn');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => {
+  e.preventDefault(); uploadZone.classList.add('drag-over');
+});
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) {
+    fileInput.files = e.dataTransfer.files;
+    onFileSelected(e.dataTransfer.files[0]);
+  }
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) onFileSelected(fileInput.files[0]);
+});
+
+function onFileSelected(f) {
+  document.getElementById('upload-title').textContent = f.name;
+  document.getElementById('upload-sub').textContent = (f.size/1024/1024).toFixed(1) + ' MB';
+  uploadZone.style.borderColor = '#22c55e';
+  analyzeBtn.disabled = false;
+}
+
+analyzeBtn.addEventListener('click', startUpload);
+
+// ── 업로드 & 분석 시작 ──
+async function startUpload() {
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  // 선수 이름 수집
+  let playerNames = {};
+  if (currentMode === 'manual') {
+    const namesA = document.getElementById('names-a').value
+      .split(',').map(s => s.trim()).filter(Boolean);
+    const namesB = document.getElementById('names-b').value
+      .split(',').map(s => s.trim()).filter(Boolean);
+    namesA.forEach((n, i) => { playerNames[`A_${i}`] = n; });
+    namesB.forEach((n, i) => { playerNames[`B_${i}`] = n; });
+  }
+
+  const colorA = document.getElementById('color-a')?.value || '#dc2626';
+  const colorB = document.getElementById('color-b')?.value || '#3b82f6';
+
+  showScreen('processing');
+
+  const fd = new FormData();
+  fd.append('video', file);
+  fd.append('player_names', JSON.stringify(playerNames));
+  fd.append('color_a', colorA);
+  fd.append('color_b', colorB);
+  fd.append('show_names', currentMode === 'manual' ? '1' : '0');
+
+  // 업로드 진행률 표시 (XMLHttpRequest 사용)
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `${API_BASE}/api/upload`);
+
+  xhr.upload.onprogress = (e) => {
+    if (e.lengthComputable) {
+      const pct = Math.round(e.loaded / e.total * 100);
+      document.getElementById('progress-pct').textContent = pct + '%';
+      document.getElementById('progress-step').textContent = `영상 업로드 중... ${pct}%`;
+    }
+  };
+
+  xhr.onload = () => {
+    try {
+      const data = JSON.parse(xhr.responseText);
+      jobId = data.job_id;
+      document.getElementById('progress-step').textContent = 'VAEP 분석 시작...';
+      pollStatus(jobId);
+    } catch(e) {
+      alert('서버 응답 오류: ' + xhr.responseText);
+      showScreen('upload');
+    }
+  };
+
+  xhr.onerror = () => {
+    alert('업로드 실패. python server.py가 실행 중인지 확인하세요.');
+    showScreen('upload');
+  };
+
+  xhr.send(fd);
+}
+
+// ── 상태 폴링 ──
+async function pollStatus(jid) {
+  const interval = setInterval(async () => {
+    try {
+      const res  = await fetch(`${API_BASE}/api/status/${jid}`);
+      const data = await res.json();
+
+      const pct = data.progress || 0;
+      document.getElementById('progress-pct').textContent = pct + '%';
+      document.getElementById('progress-step').textContent = data.step || '처리 중...';
+      updatePipelineStep(Math.floor(pct / 15));
+
+      if (data.status === 'done') {
+        clearInterval(interval);
+        document.getElementById('progress-pct').textContent = '100%';
+        document.getElementById('progress-step').textContent = '완료!';
+        updatePipelineStep(7);
+
+        // 완료 섹션 표시
+        const doneEl = document.getElementById('done-section');
+        doneEl.style.display = 'flex';
+
+        document.getElementById('download-btn').onclick = () => {
+          window.location.href = `${API_BASE}/api/download/${jid}`;
+        };
+
+      } else if (data.status === 'error') {
+        clearInterval(interval);
+        alert('오류 발생: ' + (data.error || '알 수 없는 오류'));
+        showScreen('upload');
+      }
+    } catch(e) {
+      clearInterval(interval);
+      alert('서버 연결이 끊겼습니다.');
+      showScreen('upload');
+    }
+  }, 1000);
+}
+
+// ── 파이프라인 스텝 업데이트 ──
+function updatePipelineStep(idx) {
+  document.querySelectorAll('.p-step').forEach((el, i) => {
+    el.className = 'p-step';
+    if (i < idx) el.classList.add('done');
+    else if (i === idx) el.classList.add('active');
+  });
+}
+
+// ── 화면 전환 ──
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  const target = document.getElementById(name + '-screen');
+  target.classList.add('active');
+}
+
+// ── 다시 시작 ──
+document.getElementById('restart-btn').addEventListener('click', () => {
+  jobId = null;
+  document.getElementById('progress-pct').textContent = '0%';
+  document.getElementById('progress-step').textContent = '준비 중...';
+  document.getElementById('done-section').style.display = 'none';
+  document.getElementById('upload-title').textContent = '축구 경기 영상을 업로드하세요';
+  document.getElementById('upload-sub').textContent = 'MP4, AVI, MOV, MKV 지원 (최대 500MB)';
+  uploadZone.style.borderColor = '';
+  analyzeBtn.disabled = true;
+  updatePipelineStep(-1);
+  showScreen('upload');
+});
+</script>
+</body>
+</html>
