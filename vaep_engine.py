@@ -2,11 +2,6 @@
 VAEP Engine: Value Added by Each Player Action (오프더볼 확장 포함)
 =================================================================
 기존 VAEP(패스/드리블/슛 등 볼 터치 Action) + 오프더볼 움직임 기여도 통합 모델
-
-참고 문헌:
-- Decroos et al. (2019) "Actions Speak Louder than Goals: Valuing Player Actions in Football"
-- Singh (2019) "Introducing Expected Threat (xT)"
-- Robberechts et al. (2021) "Off-Ball Scoring Opportunity"
 """
 
 import numpy as np
