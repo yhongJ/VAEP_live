@@ -83,9 +83,8 @@
 
 ### 참고 문헌
 
-- Decroos et al. (2019) "Actions Speak Louder than Goals: Valuing Player Actions in Football"
+- Decroos et al. (2019) "Actions Speak Louder than Goals: Valuing Player Actions in Soccer"
 - Singh (2019) "Introducing Expected Threat (xT)"
-- Robberechts et al. (2021) "Off-Ball Scoring Opportunity"
 
 ### 온볼 VAEP
 
